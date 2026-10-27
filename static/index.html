@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JobIntel Pro Suite - Complete ATS Ecosystem</title>
+  <title>JobIntel Pro Suite - Complete ATS Recruitment Ecosystem</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -12,25 +12,136 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-offer-letter, #printable-offer-letter * { visibility: visible; }
+      #printable-offer-letter {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: white !important;
+        color: black !important;
+      }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div id="app"></div>
 
   <script>
-    // Check if user is on the popup studio route
     const isStudio = window.location.pathname.includes('interview-studio');
+
+    function getStudent() {
+      const saved = localStorage.getItem('jobintel_student');
+      return saved ? JSON.parse(saved) : null;
+    }
+
+    function saveStudent(profile) {
+      localStorage.setItem('jobintel_student', JSON.stringify(profile));
+    }
+
+    function logoutStudent() {
+      localStorage.removeItem('jobintel_student');
+      location.reload();
+    }
 
     if (isStudio) {
       renderStudio();
     } else {
-      renderDashboard();
+      const student = getStudent();
+      if (!student) {
+        renderAuthModal();
+      } else {
+        renderDashboard(student);
+      }
+    }
+
+    // ==========================================
+    // 0. STUDENT ONBOARDING / LOGIN SCREEN
+    // ==========================================
+    function renderAuthModal() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950/40 via-slate-950 to-black">
+          <div class="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-xl">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold font-mono text-white text-xl shadow-lg shadow-blue-500/30">
+                JI
+              </div>
+              <div>
+                <h1 class="text-lg font-bold text-slate-100">JobIntel Candidate Portal</h1>
+                <p class="text-xs text-slate-400">Student Sign-In & Verification</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-6 leading-relaxed">
+              Welcome! Register your profile to apply for active engineering roles, run ATS resume diagnostics, and unlock live proctored AI technical assessments.
+            </p>
+
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+              <div>
+                <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Full Legal Name</label>
+                <input id="auth-name" type="text" required placeholder="e.g. John Doe" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500" />
+              </div>
+
+              <div>
+                <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Email Address</label>
+                <input id="auth-email" type="email" required placeholder="e.g. student@university.edu" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">University / College</label>
+                  <input id="auth-college" type="text" required placeholder="e.g. Engineering Institute" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Graduation Year</label>
+                  <input id="auth-year" type="text" required placeholder="e.g. 2026 or 2027" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Target Role</label>
+                <select id="auth-role" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+                  <option value="Software Development Engineer (Full Stack)">Software Development Engineer (Full Stack)</option>
+                  <option value="Backend Systems Engineer">Backend Systems Engineer</option>
+                  <option value="Cloud Infrastructure Engineer">Cloud Infrastructure Engineer</option>
+                  <option value="Frontend Developer">Frontend Developer</option>
+                </select>
+              </div>
+
+              <button type="submit" class="w-full mt-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-blue-500/20 transition-all cursor-pointer">
+                Enter Candidate Portal ➔
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('auth-name').value.trim();
+      const email = document.getElementById('auth-email').value.trim();
+      const college = document.getElementById('auth-college').value.trim();
+      const year = document.getElementById('auth-year').value.trim();
+      const role = document.getElementById('auth-role').value;
+
+      const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'ST';
+
+      saveStudent({ name, email, college, year, role, initials });
+      location.reload();
     }
 
     // ==========================================
     // 1. MAIN DASHBOARD VIEW
     // ==========================================
-    function renderDashboard() {
+    function renderDashboard(student) {
       const app = document.getElementById('app');
       app.innerHTML = `
         <div class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
@@ -41,19 +152,23 @@
               </div>
               <div>
                 <h1 class="font-bold text-base text-slate-100 flex items-center gap-2">
-                  JobIntel Pro Suite <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">Complete ATS Ecosystem</span>
+                  JobIntel Pro Suite <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">Recruitment Ecosystem</span>
                 </h1>
                 <p class="text-xs text-slate-400">Jobs Apply • ATS Scanner • Resume Builder • Kanban Pipeline • AI Interview Studio</p>
               </div>
             </div>
+
             <div class="flex items-center gap-4">
               <div class="text-right">
-                <div class="text-xs font-semibold text-slate-200">Manvardhan Tripathi</div>
-                <div class="text-[11px] text-emerald-400 font-mono">B.Tech CSE '26 @ MMMUT</div>
+                <div class="text-xs font-semibold text-slate-200">${student.name}</div>
+                <div class="text-[11px] text-emerald-400 font-mono">${student.college} • Class of '${student.year.slice(-2)}</div>
               </div>
               <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-blue-400">
-                MT
+                ${student.initials}
               </div>
+              <button onclick="logoutStudent()" title="Sign Out / Switch Student" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors text-xs cursor-pointer">
+                🚪
+              </button>
             </div>
           </header>
 
@@ -73,18 +188,19 @@
           </nav>
 
           <main id="content" class="flex-1 p-8"></main>
+          <div id="modal-container"></div>
         </div>
       `;
 
-      // Listen for completion postMessage from popup studio
       window.addEventListener('message', async (event) => {
         if (event.data?.type === 'JOBINTEL_INTERVIEW_COMPLETE') {
           const { score, summary } = event.data.payload;
+          const candidateId = event.data.candidateId || 'app-1';
           await fetch('/api/pipeline/update-stage', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              candidateId: 'app-1',
+              candidateId: candidateId,
               stage: 'System Design',
               score: score,
               feedback: summary
@@ -94,7 +210,7 @@
         }
       });
 
-      switchTab('pipeline');
+      switchTab('jobs');
     }
 
     function switchTab(tab) {
@@ -118,7 +234,7 @@
     // --- TAB: JOBS ---
     async function loadJobs() {
       const container = document.getElementById('content');
-      container.innerHTML = '<div class="text-center py-20 text-slate-500 font-mono text-sm">Loading jobs...</div>';
+      container.innerHTML = '<div class="text-center py-20 text-slate-500 font-mono text-sm">Loading verified jobs...</div>';
 
       try {
         const res = await fetch('/api/jobs');
@@ -127,8 +243,8 @@
           <div class="space-y-6">
             <div class="flex justify-between items-center pb-4 border-b border-slate-800">
               <div>
-                <h2 class="text-xl font-bold text-slate-100">Verified SDE Opportunities</h2>
-                <p class="text-xs text-slate-400">Direct 1-Click Applications linked with your JobIntel ATS Resume</p>
+                <h2 class="text-xl font-bold text-slate-100">Verified Opportunities for New Applicants</h2>
+                <p class="text-xs text-slate-400">Click Quick Apply to enter your application into the sequential hiring pipeline</p>
               </div>
               <span class="text-xs font-mono bg-blue-950 text-blue-400 border border-blue-800 px-3 py-1 rounded-full">
                 ${jobs.length} Active Positions
@@ -173,13 +289,13 @@
       await fetch('/api/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, company, role, atsScore: 92 })
+        body: JSON.stringify({ jobId, company, role, atsScore: 0 })
       });
-      alert(`Applied to ${role} at ${company}! Check your Recruitment Lifecycle.`);
+      alert(`Applied to ${role} at ${company}! Added to your Recruitment Lifecycle.`);
       switchTab('pipeline');
     }
 
-    // --- TAB: PIPELINE ---
+    // --- TAB: PIPELINE (WITH STRICT RECRUITMENT GATING & OFFER LETTER) ---
     async function loadPipeline() {
       const container = document.getElementById('content');
       container.innerHTML = '<div class="text-center py-20 text-slate-500 font-mono text-sm">Loading stages...</div>';
@@ -194,19 +310,19 @@
             <div class="flex justify-between items-center pb-3 border-b border-slate-800">
               <div>
                 <h2 class="text-xl font-bold text-slate-100">Live Recruitment Lifecycle & ATS Pipeline</h2>
-                <p class="text-xs text-slate-400">Track candidates from initial screening and OA to WebRTC AI Technical Assessment</p>
+                <p class="text-xs text-slate-400">Sequential Hiring: Resume Screening ➔ OA Coding ➔ AI Technical Studio ➔ System Design ➔ Offer</p>
               </div>
               <button onclick="loadPipeline()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300 flex items-center gap-2 cursor-pointer transition-all">
                 ↻ Refresh Stages
               </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 overflow-x-auto min-w-[1200px]">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 overflow-x-auto min-w-[1250px]">
         `;
 
         stages.forEach(stage => {
           const cards = applications.filter(a => a.stage === stage);
           html += `
-            <div class="bg-slate-900/60 rounded-xl border border-slate-800/80 p-3.5 flex flex-col min-h-[520px]">
+            <div class="bg-slate-900/60 rounded-xl border border-slate-800/80 p-3.5 flex flex-col min-h-[540px]">
               <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">${stage}</span>
                 <span class="text-[10px] font-mono font-bold bg-slate-800 px-2 py-0.5 rounded text-blue-400">${cards.length}</span>
@@ -214,24 +330,88 @@
               <div class="space-y-3 flex-1">
           `;
 
+          if (cards.length === 0) {
+            html += `<div class="h-32 flex items-center justify-center text-[11px] text-slate-600 font-mono border border-dashed border-slate-800/60 rounded-lg">No active candidates</div>`;
+          }
+
           cards.forEach(c => {
+            const isLowScore = c.ats_score > 0 && c.ats_score < 75;
+
             html += `
               <div class="p-3.5 rounded-lg bg-slate-950 border border-slate-800/90 shadow-md flex flex-col justify-between">
                 <div>
                   <div class="flex items-center justify-between mb-1.5">
                     <span class="text-xs font-bold text-slate-200">${c.company}</span>
-                    ${c.ats_score > 0 ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/50">ATS: ${c.ats_score}%</span>` : ''}
+                    ${c.ats_score > 0 ? `
+                      <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${isLowScore ? 'bg-red-950/80 text-red-400 border border-red-800/50' : 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'}">
+                        ATS: ${c.ats_score}%
+                      </span>
+                    ` : ''}
                   </div>
                   <div class="text-[11px] text-slate-400 mb-2 font-medium">${c.role}</div>
-                  <p class="text-[10px] text-slate-500 mb-2 leading-relaxed">${c.feedback || ''}</p>
+                  <p class="text-[10px] text-slate-500 mb-2 leading-relaxed">${c.feedback || 'Application registered.'}</p>
                   ${c.interview_score > 0 ? `<div class="text-[10px] font-mono text-cyan-400 bg-cyan-950/40 p-1.5 rounded mb-2 border border-cyan-800/40">Interview Score: ${c.interview_score}/100</div>` : ''}
                 </div>
-                ${c.stage === 'Technical Assessment' ? `
-                  <button onclick="launchStudio('${c.id}')" class="w-full mt-2 py-2 px-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-blue-500/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    Launch AI Studio 🚀
-                  </button>
-                ` : ''}
+
+                <div class="mt-2 space-y-1.5">
+                  ${c.stage === 'Applied' ? `
+                    <label class="w-full block text-center py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-bold uppercase rounded border border-dashed border-slate-700 cursor-pointer transition-all">
+                      📁 Upload Resume File
+                      <input type="file" accept=".pdf,.txt,.docx" class="hidden" onchange="handleFileUpload(event, '${c.id}')" />
+                    </label>
+                    <button onclick="runScreeningCheck('${c.id}', 90)" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase rounded transition-all cursor-pointer">
+                      Run ATS Screening ➔
+                    </button>
+                  ` : ''}
+
+                  ${c.stage === 'Resume Screening' && isLowScore ? `
+                    <div class="p-2 rounded bg-red-950/40 border border-red-800/40 text-[10px] text-red-300 mb-1">
+                      ⚠️ Score below 75% threshold. Automated filter rejected.
+                    </div>
+                    <button onclick="switchTab('maker')" class="w-full py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase rounded transition-all cursor-pointer">
+                      🛠️ Rebuild in ATS Resume Maker ➔
+                    </button>
+                    <button onclick="runScreeningCheck('${c.id}', 92)" class="w-full py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] uppercase rounded cursor-pointer">
+                      Re-scan Updated Resume
+                    </button>
+                  ` : ''}
+
+                  ${c.stage === 'Resume Screening' && !isLowScore ? `
+                    <button onclick="advanceCandidate('${c.id}', 'Online Assessment (OA)', ${c.ats_score}, 'Screening Passed (Score: ${c.ats_score}%). Algorithmic Coding Assessment Link Dispatched.')" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold uppercase rounded transition-all cursor-pointer">
+                      Pass ATS & Send OA ➔
+                    </button>
+                  ` : ''}
+
+                  ${c.stage === 'Online Assessment (OA)' ? `
+                    <button onclick="advanceCandidate('${c.id}', 'Technical Assessment', 95, 'Coding assessment completed with 100% test cases cleared. Qualified for AI Technical Studio.')" class="w-full py-1.5 bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-[10px] font-bold uppercase rounded border border-indigo-700 transition-all cursor-pointer">
+                      Verify OA Score (95%) ➔
+                    </button>
+                  ` : ''}
+
+                  ${c.stage === 'Technical Assessment' ? `
+                    <button onclick="launchStudio('${c.id}')" class="w-full py-2 px-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-blue-500/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                      Launch AI Studio 🚀
+                    </button>
+                  ` : ''}
+
+                  ${c.stage === 'System Design' ? `
+                    <button onclick="advanceCandidate('${c.id}', 'Offer Secured', 94, 'Passed System Design architectural drill-down. Formal employment offer generated.')" class="w-full py-1.5 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold uppercase rounded border border-emerald-700 transition-all cursor-pointer">
+                      Extend Job Offer 🏆
+                    </button>
+                  ` : ''}
+
+                  ${c.stage === 'Offer Secured' ? `
+                    <div class="space-y-1.5">
+                      <div class="text-center py-1 text-emerald-400 font-mono text-[10px] font-bold bg-emerald-950/40 border border-emerald-800/40 rounded">
+                        ✓ Offer Extended
+                      </div>
+                      <button onclick="openOfferLetterModal('${c.company}', '${c.role}', '${c.id}')" class="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[10px] font-bold uppercase tracking-wider rounded shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                        📜 View Offer Letter (PDF/DOC)
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
               </div>
             `;
           });
@@ -246,6 +426,36 @@
       }
     }
 
+    function handleFileUpload(event, candidateId) {
+      const file = event.target.files[0];
+      if (!file) return;
+      alert(`Resume "${file.name}" uploaded successfully! Running ATS Screening...`);
+      runScreeningCheck(candidateId, 92);
+    }
+
+    async function runScreeningCheck(candidateId, score = 90) {
+      const stage = 'Resume Screening';
+      const feedback = score >= 75 
+        ? `ATS Screening Passed (${score}% Match). Key competencies detected.`
+        : `ATS Screening Failed (${score}% Match). Lacks required technical keywords.`;
+
+      await fetch('/api/pipeline/update-stage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId, stage, score, feedback })
+      });
+      loadPipeline();
+    }
+
+    async function advanceCandidate(candidateId, nextStage, score, feedback) {
+      await fetch('/api/pipeline/update-stage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId, stage: nextStage, score, feedback })
+      });
+      loadPipeline();
+    }
+
     function launchStudio(candidateId) {
       const width = 1366;
       const height = 850;
@@ -255,8 +465,247 @@
       window.open('/interview-studio?candidateId=' + candidateId, 'JobIntelStudio', features);
     }
 
+    // ==========================================
+    // 2. FORMAL OFFER LETTER MODAL & EXPORT
+    // ==========================================
+    let activeOfferData = null;
+
+    function openOfferLetterModal(company, role, appId) {
+      const student = getStudent() || { name: 'Student Candidate', email: 'candidate@university.edu', college: 'Engineering Institute' };
+      const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const refNo = `JI-${company.substring(0,3).toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      activeOfferData = {
+        company,
+        role,
+        studentName: student.name,
+        studentEmail: student.email,
+        studentCollege: student.college,
+        refNo,
+        date: today,
+        salary: company.includes('Google') ? '₹32,00,000' : company.includes('Microsoft') ? '₹28,00,000' : '₹26,00,000',
+        base: company.includes('Google') ? '₹22,00,000' : company.includes('Microsoft') ? '₹20,00,000' : '₹18,00,000',
+        bonus: company.includes('Google') ? '₹4,00,000' : company.includes('Microsoft') ? '₹3,00,000' : '₹3,00,000',
+        stocks: company.includes('Google') ? '₹6,00,000' : company.includes('Microsoft') ? '₹5,00,000' : '₹5,00,000'
+      };
+
+      const modalContainer = document.getElementById('modal-container');
+      modalContainer.innerHTML = `
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div class="max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-8">
+            <!-- Modal Actions Bar -->
+            <div class="no-print bg-slate-950 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">Verified Employment Offer Contract</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <button onclick="downloadOfferWordDoc()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold uppercase tracking-wider shadow cursor-pointer transition-all flex items-center gap-1.5">
+                  📥 Download DOC (Word)
+                </button>
+                <button onclick="window.print()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold uppercase tracking-wider shadow cursor-pointer transition-all flex items-center gap-1.5">
+                  🖨️ Download PDF / Print
+                </button>
+                <button onclick="closeOfferModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer">
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+
+            <!-- Printable Offer Letter Body -->
+            <div id="printable-offer-letter" class="p-10 md:p-14 bg-white text-slate-900 font-serif leading-relaxed text-[13px] border-t-8 border-blue-600">
+              <!-- Company Header Letterhead -->
+              <div class="flex justify-between items-start border-b border-slate-300 pb-6 mb-8">
+                <div>
+                  <h1 class="text-2xl font-bold uppercase tracking-tight text-slate-900 font-sans">${company} Global Technologies</h1>
+                  <p class="text-xs text-slate-600 font-sans mt-0.5">Corporate Human Capital & Engineering Talent Acquisition</p>
+                  <p class="text-[11px] text-slate-500 font-sans">Technology Park, Campus Hub, Bengaluru / Hyderabad</p>
+                </div>
+                <div class="text-right font-sans text-xs">
+                  <div class="font-bold text-slate-900 font-mono">Ref: ${refNo}</div>
+                  <div class="text-slate-500 mt-1">${today}</div>
+                  <div class="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded mt-2 inline-block">CONFIDENTIAL & PRIVATE</div>
+                </div>
+              </div>
+
+              <!-- Recipient Info -->
+              <div class="mb-6 font-sans">
+                <p class="font-bold text-slate-900 text-sm">To,</p>
+                <p class="font-bold text-slate-900 text-base">${student.name}</p>
+                <p class="text-slate-600 text-xs">${student.email}</p>
+                <p class="text-slate-600 text-xs">${student.college}</p>
+              </div>
+
+              <!-- Letter Subject -->
+              <div class="font-sans font-bold text-slate-900 border-l-4 border-blue-600 pl-3 py-1 mb-6 text-sm">
+                SUBJECT: LETTER OF APPOINTMENT - ${role.toUpperCase()}
+              </div>
+
+              <!-- Body Paragraphs -->
+              <div class="space-y-4 text-justify font-sans text-slate-800 text-xs">
+                <p>
+                  Dear <strong>${student.name}</strong>,
+                </p>
+                <p>
+                  Following your performance in the JobIntel sequential recruitment lifecycle—including our automated ATS Resume Screening, Algorithmic Online Assessment (OA), Live WebRTC AI Technical Assessment, and System Design Review—we are delighted to extend this formal offer of employment for the position of <strong>${role}</strong> at <strong>${company}</strong>.
+                </p>
+                <p>
+                  We were particularly impressed by your problem-solving competence, understanding of distributed systems and scalable backend architectures, and core foundational engineering skills.
+                </p>
+
+                <!-- Compensation Structure Table -->
+                <div class="my-6">
+                  <h3 class="font-bold uppercase tracking-wider text-[11px] text-slate-900 mb-2 border-b pb-1">Annual Compensation Breakdown (CTC)</h3>
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr class="bg-slate-100 border-b border-slate-300 text-slate-700">
+                        <th class="p-2.5 font-bold">Compensation Component</th>
+                        <th class="p-2.5 font-bold text-right">Annual Entitlement (INR)</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                      <tr>
+                        <td class="p-2.5">Base Salary (Fixed)</td>
+                        <td class="p-2.5 text-right font-mono font-medium">${activeOfferData.base}</td>
+                      </tr>
+                      <tr>
+                        <td class="p-2.5">Target Annual Performance Bonus</td>
+                        <td class="p-2.5 text-right font-mono font-medium">${activeOfferData.bonus}</td>
+                      </tr>
+                      <tr>
+                        <td class="p-2.5">Restricted Equity Units (ESOPs / Stocks - Year 1)</td>
+                        <td class="p-2.5 text-right font-mono font-medium">${activeOfferData.stocks}</td>
+                      </tr>
+                      <tr class="bg-blue-50/70 font-bold text-blue-950 border-t border-blue-300">
+                        <td class="p-2.5">Total Cost to Company (CTC)</td>
+                        <td class="p-2.5 text-right font-mono text-sm">${activeOfferData.salary}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <p>
+                  <strong>Terms of Employment:</strong>
+                </p>
+                <ul class="list-disc pl-5 space-y-1.5 text-slate-700">
+                  <li><strong>Work Location:</strong> Bengaluru / Hyderabad Technology Centre (Hybrid).</li>
+                  <li><strong>Standard Benefits:</strong> Comprehensive family health insurance, professional development stipend, wellness allowance, and statutory provident fund contributions.</li>
+                  <li><strong>Commencement Date:</strong> Subject to successful completion of your undergraduate degree, your tentative joining date is scheduled for <strong>July 1, 2026</strong>.</li>
+                  <li><strong>Acceptance Validity:</strong> This offer remains valid for 7 calendar days from the date of issue.</li>
+                </ul>
+
+                <p class="pt-2">
+                  Please signify your formal acceptance of this appointment by signing and returning a digital copy of this document. We look forward to welcoming you to the engineering organization.
+                </p>
+              </div>
+
+              <!-- Signatures Block -->
+              <div class="mt-12 pt-8 border-t border-slate-300 flex justify-between items-end font-sans">
+                <div>
+                  <div class="font-serif italic text-lg text-slate-700 font-bold mb-1">R. Krishnamurthy</div>
+                  <div class="font-bold text-xs text-slate-900">Global Head of Engineering Talent</div>
+                  <div class="text-[11px] text-slate-500">${company} Global Technologies</div>
+                </div>
+
+                <div class="text-right">
+                  <div class="w-48 border-b border-slate-400 mb-2"></div>
+                  <div class="font-bold text-xs text-slate-900">Accepted by: ${student.name}</div>
+                  <div class="text-[11px] text-slate-500">Date: ________________________</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeOfferModal() {
+      document.getElementById('modal-container').innerHTML = '';
+    }
+
+    // Export as DOC / Word Document
+    function downloadOfferWordDoc() {
+      if (!activeOfferData) return;
+      const d = activeOfferData;
+
+      const htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset="utf-8">
+          <title>Employment Offer - ${d.company}</title>
+          <style>
+            body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #222; }
+            h1 { font-size: 18pt; color: #0f172a; margin-bottom: 2px; }
+            h2 { font-size: 13pt; color: #1e3a8a; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+            th { background-color: #f1f5f9; }
+            .total-row { background-color: #e0f2fe; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>${d.company} Global Technologies</h1>
+          <p><em>Corporate Engineering Talent Acquisition • Reference: ${d.refNo} • Date: ${d.date}</em></p>
+          <hr/>
+          <p><strong>To:</strong><br/>
+          <strong>${d.studentName}</strong><br/>
+          ${d.studentEmail}<br/>
+          ${d.studentCollege}</p>
+          
+          <h2>SUBJECT: FORMAL OFFER OF EMPLOYMENT - ${d.role.toUpperCase()}</h2>
+          <p>Dear <strong>${d.studentName}</strong>,</p>
+          <p>Following your successful evaluation across the JobIntel sequential recruitment pipeline (ATS Screening, Online Assessment, WebRTC AI Technical Assessment, and System Design Review), we are pleased to offer you the position of <strong>${d.role}</strong> at <strong>${d.company}</strong>.</p>
+          
+          <h3>Compensation Breakdown (Annual CTC)</h3>
+          <table>
+            <thead>
+              <tr><th>Component</th><th style="text-align:right;">Amount (INR)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Base Fixed Salary</td><td style="text-align:right;">${d.base}</td></tr>
+              <tr><td>Annual Performance Bonus</td><td style="text-align:right;">${d.bonus}</td></tr>
+              <tr><td>Restricted Stock Units / ESOPs (Year 1)</td><td style="text-align:right;">${d.stocks}</td></tr>
+              <tr class="total-row"><td>Total Cost to Company (CTC)</td><td style="text-align:right;">${d.salary}</td></tr>
+            </tbody>
+          </table>
+
+          <p><strong>Work Location:</strong> Bengaluru / Hyderabad Hub (Hybrid)<br/>
+          <strong>Tentative Start Date:</strong> July 1, 2026</p>
+          
+          <p>Please sign and return this offer within 7 calendar days to confirm your acceptance.</p>
+          <br/><br/>
+          <table style="border:none;">
+            <tr style="border:none;">
+              <td style="border:none;">
+                <strong>Global Head of Talent</strong><br/>
+                ${d.company} Global Technologies
+              </td>
+              <td style="border:none; text-align:right;">
+                <strong>Candidate Signature:</strong> ______________________<br/>
+                <strong>Date:</strong> ______________________
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', htmlContent], {
+        type: 'application/msword'
+      });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = `${d.company.replace(/\\s+/g, '_')}_Offer_Letter_${d.studentName.replace(/\\s+/g, '_')}.doc`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
+    }
+
     // --- TAB: ATS CHECKER ---
     function loadAts() {
+      const student = getStudent() || { name: 'Student Candidate' };
       const container = document.getElementById('content');
       container.innerHTML = `
         <div class="space-y-6">
@@ -267,14 +716,14 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 font-mono">Your Resume Text</label>
-              <textarea id="ats-resume" rows="10" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500">MANVARDHAN TRIPATHI - Software Development Engineer
-Skills: Python, Flask, React.js, WebRTC, SQL, REST APIs, Concurrency, Git, OOP, Microservices
-Experience: Full Stack Developer Intern at Unified Mentor - Built modular Flask RESTful microservices.
-Projects: JobIntel & Technical Interview Pro Suite - WebRTC proctored assessment engine with dynamic speech synthesis.</textarea>
+              <textarea id="ats-resume" rows="10" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500">${student.name.toUpperCase()} - Software Engineering Candidate
+Skills: Python, Flask, React.js, WebRTC, SQL, REST APIs, Concurrency, Git, OOP, Data Structures
+Experience: Software Development Intern - Designed RESTful microservices and optimized API latency under concurrent load.
+Projects: Enterprise Recruitment Pipeline & Proctoring Studio - Real-time candidate evaluation engine with automated ATS screening.</textarea>
             </div>
             <div>
               <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 font-mono">Target Job Description</label>
-              <textarea id="ats-jd" rows="10" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500">Looking for a Full-Stack Software Engineer proficient in Python, Flask, React.js, WebRTC, REST APIs, and SQL. Experience building high-throughput services and real-time audio/video streaming is required.</textarea>
+              <textarea id="ats-jd" rows="10" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500">Looking for an Entry-Level Software Engineer proficient in Python, Flask, React.js, WebRTC, REST APIs, and SQL. Experience building scalable microservices and real-time streaming tools is required.</textarea>
             </div>
           </div>
           <button onclick="runAtsScan()" id="ats-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg transition-all cursor-pointer">
@@ -339,13 +788,14 @@ Projects: JobIntel & Technical Interview Pro Suite - WebRTC proctored assessment
 
     // --- TAB: RESUME MAKER ---
     function loadMaker() {
+      const student = getStudent() || { name: 'Student Candidate', email: 'candidate@university.edu', college: 'Engineering Institute' };
       const container = document.getElementById('content');
       container.innerHTML = `
         <div class="space-y-6">
           <div class="flex justify-between items-center pb-3 border-b border-slate-800">
             <div>
               <h2 class="text-xl font-bold text-slate-100">ATS Resume Maker & Formatter</h2>
-              <p class="text-xs text-slate-400">Generate high-conversion, single-column resumes designed to bypass Workday, Lever, and Taleo filters</p>
+              <p class="text-xs text-slate-400">Interactive editor with single-column layout pre-configured to pass ATS parsers</p>
             </div>
             <button onclick="window.print()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer">
               Print / Save ATS PDF 📄
@@ -356,51 +806,59 @@ Projects: JobIntel & Technical Interview Pro Suite - WebRTC proctored assessment
               <h3 class="text-sm font-bold text-blue-400 uppercase tracking-wider font-mono">Editor Form</h3>
               <div>
                 <label class="text-[11px] text-slate-400 font-semibold block mb-1">Full Legal Name</label>
-                <input id="rm-name" oninput="updateResumePreview()" type="text" value="MANVARDHAN TRIPATHI" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200" />
+                <input id="rm-name" oninput="updateResumePreview()" type="text" value="${student.name.toUpperCase()}" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200" />
               </div>
               <div>
                 <label class="text-[11px] text-slate-400 font-semibold block mb-1">Contact Details & Location</label>
-                <input id="rm-contact" oninput="updateResumePreview()" type="text" value="Lucknow, India • +91-9555972452 • manvardhantripathi12b@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200" />
+                <input id="rm-contact" oninput="updateResumePreview()" type="text" value="New Delhi, India • +91-9876543210 • ${student.email}" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200" />
               </div>
               <div>
                 <label class="text-[11px] text-slate-400 font-semibold block mb-1">Professional Summary</label>
-                <textarea id="rm-summary" oninput="updateResumePreview()" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 font-sans">Software Development Engineer graduating in 2026 with strong foundations in Data Structures, Algorithms, Distributed Multi-Tiered Architecture, and Relational Databases. Proven track record of developing scalable RESTful microservices, real-time WebRTC channels, and high-concurrency systems.</textarea>
+                <textarea id="rm-summary" oninput="updateResumePreview()" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 font-sans">Undergraduate Computer Science & Engineering student at ${student.college} with strong fundamentals in Data Structures, Algorithms, RESTful APIs, and Relational Databases. Passionate about engineering high-throughput backend services and responsive frontend applications.</textarea>
               </div>
               <div>
                 <label class="text-[11px] text-slate-400 font-semibold block mb-1">Technical Skills</label>
                 <input id="rm-skills" oninput="updateResumePreview()" type="text" value="Python, Flask, React.js, WebRTC, SQL, PostgreSQL, REST APIs, Docker, Concurrency, Git, DSA" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 font-mono" />
               </div>
+              <div>
+                <label class="text-[11px] text-slate-400 font-semibold block mb-1">Experience (Internships / Apprenticeships)</label>
+                <textarea id="rm-exp" oninput="updateResumePreview()" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 font-mono">ENGINEERING INTERN - Tech Solutions (Summer 2025)
+• Developed modular RESTful API endpoints and reduced response times by 30%.
+• Collaborated in team sprints and handled git-based code reviews and documentation.</textarea>
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 font-semibold block mb-1">Key Projects</label>
+                <textarea id="rm-proj" oninput="updateResumePreview()" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 font-mono">Autonomous Recruitment & Technical Proctoring Platform
+• Built an end-to-end recruitment lifecycle system tracking candidates across 6 hiring stages.
+• Implemented live WebRTC audio/video capture with automated ATS parsing algorithms.</textarea>
+              </div>
             </div>
 
             <div class="bg-white text-slate-900 p-8 rounded-xl shadow-2xl overflow-y-auto max-h-[750px] font-sans border border-slate-300">
               <div class="text-center border-b pb-4 mb-4 border-slate-300">
-                <h1 id="prev-name" class="text-xl font-bold tracking-tight text-slate-900">MANVARDHAN TRIPATHI</h1>
-                <p id="prev-contact" class="text-[11px] text-slate-600 mt-1">Lucknow, India • +91-9555972452 • manvardhantripathi12b@gmail.com</p>
-                <p class="text-[11px] text-blue-700 underline mt-0.5">linkedin.com/in/manvardhan-tripathi • github.com/Maan-netizen</p>
+                <h1 id="prev-name" class="text-xl font-bold tracking-tight text-slate-900">${student.name.toUpperCase()}</h1>
+                <p id="prev-contact" class="text-[11px] text-slate-600 mt-1">New Delhi, India • +91-9876543210 • ${student.email}</p>
+                <p class="text-[11px] text-blue-700 underline mt-0.5">linkedin.com/in/student-candidate • github.com/student-candidate</p>
               </div>
               <div class="mb-4">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-400 pb-0.5 mb-1.5">Professional Summary</h2>
-                <p id="prev-summary" class="text-[11px] text-slate-700 leading-relaxed">Software Development Engineer graduating in 2026 with strong foundations in Data Structures, Algorithms, Distributed Multi-Tiered Architecture, and Relational Databases. Proven track record of developing scalable RESTful microservices, real-time WebRTC channels, and high-concurrency systems.</p>
+                <p id="prev-summary" class="text-[11px] text-slate-700 leading-relaxed">Undergraduate Computer Science & Engineering student at ${student.college} with strong fundamentals in Data Structures, Algorithms, RESTful APIs, and Relational Databases. Passionate about engineering high-throughput backend services and responsive frontend applications.</p>
               </div>
               <div class="mb-4">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-400 pb-0.5 mb-1.5">Technical Skills</h2>
                 <p id="prev-skills" class="text-[11px] text-slate-700 leading-relaxed font-mono">Python, Flask, React.js, WebRTC, SQL, PostgreSQL, REST APIs, Docker, Concurrency, Git, DSA</p>
               </div>
               <div class="mb-4">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-400 pb-0.5 mb-1.5">Professional Experience</h2>
-                <p class="text-[11px] text-slate-700 leading-relaxed">
-                  <strong>UNIFIED MENTOR</strong> - Full Stack Developer Intern (Jun 2025 – Sep 2025)<br/>
-                  • Architected and optimized multi-tiered, Flask-based RESTful microservices, cutting API latency by 40% under concurrent load.<br/>
-                  • Resolved critical race conditions and bottlenecks through systematic root-cause analysis.
-                </p>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-400 pb-0.5 mb-1.5">Experience</h2>
+                <pre id="prev-exp" class="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">ENGINEERING INTERN - Tech Solutions (Summer 2025)
+• Developed modular RESTful API endpoints and reduced response times by 30%.
+• Collaborated in team sprints and handled git-based code reviews and documentation.</pre>
               </div>
               <div>
-                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-400 pb-0.5 mb-1.5">Key Engineering Projects</h2>
-                <p class="text-[11px] text-slate-700 leading-relaxed">
-                  <strong>JobIntel & HackerRank Chakra Pro Suite</strong> (Sep 2026 – Oct 2026)<br/>
-                  • Engineered a 5-stage recruitment lifecycle pipeline with resilient state persistence and sub-100ms updates.<br/>
-                  • Built an autonomous real-time AI technical interview simulator utilizing Web Speech APIs and WebRTC proctoring telemetry.
-                </p>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-400 pb-0.5 mb-1.5">Key Projects</h2>
+                <pre id="prev-proj" class="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">Autonomous Recruitment & Technical Proctoring Platform
+• Built an end-to-end recruitment lifecycle system tracking candidates across 6 hiring stages.
+• Implemented live WebRTC audio/video capture with automated ATS parsing algorithms.</pre>
               </div>
             </div>
           </div>
@@ -413,18 +871,20 @@ Projects: JobIntel & Technical Interview Pro Suite - WebRTC proctored assessment
       document.getElementById('prev-contact').innerText = document.getElementById('rm-contact').value;
       document.getElementById('prev-summary').innerText = document.getElementById('rm-summary').value;
       document.getElementById('prev-skills').innerText = document.getElementById('rm-skills').value;
+      document.getElementById('prev-exp').innerText = document.getElementById('rm-exp').value;
+      document.getElementById('prev-proj').innerText = document.getElementById('rm-proj').value;
     }
 
     // ==========================================
-    // 2. ISOLATED WEBRTC AI INTERVIEW STUDIO
+    // 3. ISOLATED WEBRTC AI INTERVIEW STUDIO
     // ==========================================
     let studioStream = null;
     let studioAudioContext = null;
     let studioAnimFrame = null;
     let questionIndex = 0;
-    let isSpeaking = false;
 
     function renderStudio() {
+      const student = getStudent() || { name: 'Student Candidate' };
       const app = document.getElementById('app');
       app.innerHTML = `
         <div class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
@@ -436,7 +896,7 @@ Projects: JobIntel & Technical Interview Pro Suite - WebRTC proctored assessment
               </span>
             </div>
             <div class="flex items-center gap-4">
-              <span class="text-xs text-slate-400 font-mono">Candidate: Manvardhan Tripathi</span>
+              <span class="text-xs text-slate-400 font-mono">Candidate: ${student.name}</span>
               <button onclick="window.close()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs transition-colors cursor-pointer">
                 Exit Studio
               </button>
